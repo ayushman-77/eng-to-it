@@ -1,0 +1,48 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual Environments
+venv/
+.venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# Model Checkpoints & Large Binary Weights
+weights/
+*.pt
+*.pth
+*.bin
+*.safetensors
+*.ckpt
+
+# Generated Tokenizer Cache Files
+tokenizer_*.json
+
+# TensorBoard & Experiment Logs
+runs/
+.tensorboard/
+
+# Jupyter Notebook Checkpoints
+.ipynb_checkpoints/
+*-checkpoint.ipynb
+
+# IDE & Editor Settings / Tool Configs
+.vscode/
+.idea/
+*.swp
+*.swo
+pyrightconfig.json
+
+# OS Generated Files
+.DS_Store
+Thumbs.db
+ehthumbs.db
+desktop.ini
+
+# Temporary data and cache
+.cache/
+data/
