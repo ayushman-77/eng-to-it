@@ -1,4 +1,4 @@
-# 🚀 Transformer from Scratch in PyTorch (English to Italian)
+# Transformer from Scratch in PyTorch (English to Italian)
 
 An implementation of the original **Encoder-Decoder Transformer** neural network from the seminal research paper [*"Attention Is All You Need"*](https://arxiv.org/abs/1706.03762) (Vaswani et al., 2017), written in pure **PyTorch**.
 
@@ -6,7 +6,7 @@ This repository builds every single Transformer component from first principles 
 
 ---
 
-## 📑 Table of Contents
+## Table of Contents
 - [Architecture Overview](#-architecture-overview)
   - [Mathematical Formulations](#mathematical-formulations)
 - [Project Structure](#-project-structure)
@@ -20,7 +20,7 @@ This repository builds every single Transformer component from first principles 
 - [Hyperparameters](#-hyperparameters)
 - [References](#-references)
 
-## 🧠 Architecture & Workflow Overview
+## Architecture & Workflow Overview
 
 The model implements the complete **Sequence-to-Sequence Encoder-Decoder Transformer** pipeline:
 
@@ -61,7 +61,7 @@ The model implements the complete **Sequence-to-Sequence Encoder-Decoder Transfo
 
 ---
 
-## 📂 Project Structure
+## Project Structure
 
 ```text
 eng-to-it/
@@ -78,7 +78,7 @@ eng-to-it/
 
 ---
 
-## 📚 Dataset & Tokenization
+## Dataset & Tokenization
 
 * **Dataset:** [`Helsinki-NLP/opus_books`](https://huggingface.co/datasets/Helsinki-NLP/opus_books) (English $\rightarrow$ Italian translation pairs from classical literature).
 * **Tokenizer:** Custom `WordLevel` tokenizers trained dynamically using Hugging Face `tokenizers` library with special tokens:
@@ -114,7 +114,7 @@ eng-to-it/
 
 ---
 
-## 🏋️ Training
+## Training
 
 ### 1. Local Training (CPU)
 Run the training script locally:
@@ -132,7 +132,7 @@ For fast GPU training (~1–2 minutes per epoch):
 
 ---
 
-## 🌐 Inference & Translation
+## Inference & Translation
 
 Translate any sentence from the command line:
 
@@ -157,7 +157,7 @@ print(result) # "Camminava verso la casa ."
 
 ---
 
-## 📊 Attention Visualization
+## Attention Visualization
 
 Open [`attention_visual.ipynb`](attention_visual.ipynb) to inspect the learned attention weights:
 * **Encoder Self-Attention:** Shows which source words attend to other source words.
@@ -166,7 +166,7 @@ Open [`attention_visual.ipynb`](attention_visual.ipynb) to inspect the learned a
 
 ---
 
-## ⚙️ Hyperparameters
+## Hyperparameters
 
 Default configuration defined in [`config.py`](config.py):
 
@@ -184,12 +184,12 @@ Default configuration defined in [`config.py`](config.py):
 
 ---
 
-## 📖 References
+## References
 * Vaswani, A., et al. (2017). [*Attention Is All You Need*](https://arxiv.org/abs/1706.03762). Advances in Neural Information Processing Systems (NeurIPS).
 * Hugging Face [`datasets`](https://huggingface.co/docs/datasets) & [`tokenizers`](https://huggingface.co/docs/tokenizers).
 * OPUS Books Dataset: [Tiedemann, J. (2012). *Parallel Data, Tools and Interfaces in OPUS*](https://opus.nlpl.eu/).
 
 ---
 
-## 📜 License
+## License
 MIT License. Feel free to use, modify, and distribute for educational and research purposes.
