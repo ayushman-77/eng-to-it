@@ -46,3 +46,33 @@ desktop.ini
 # Temporary data and cache
 .cache/
 data/
+
+# C++ Build Artifacts
+build/
+cmake-build-*/
+CMakeFiles/
+CMakeCache.txt
+*.o
+*.obj
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Environment files
+.env
+*.env.local
+
+# Node/Frontend
+node_modules/
+dist/
+build/
+
+# Testing & Coverage
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+
+# Agents
+.agents/

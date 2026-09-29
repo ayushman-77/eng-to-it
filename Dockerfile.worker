@@ -1,0 +1,11 @@
+FROM python:3.11-slim
+WORKDIR /app
+
+# Install dependencies including PyTorch (CPU version to keep image size manageable)
+COPY requirements-worker.txt .
+RUN pip install --no-cache-dir -r requirements-worker.txt --extra-index-url https://download.pytorch.org/whl/cpu
+
+# Copy the core ML files, config, and weights
+COPY . .
+
+CMD ["python", "python_worker.py"]

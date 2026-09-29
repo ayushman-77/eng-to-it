@@ -1,0 +1,6 @@
+torch==2.0.1
+aio-pika
+motor
+datasets
+tokenizers
+tqdm

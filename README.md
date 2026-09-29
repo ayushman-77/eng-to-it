@@ -1,195 +1,120 @@
-# Transformer from Scratch in PyTorch (English to Italian)
+# 🚀 Eng-to-It Translator
+**A Distributed Neural Translation Engine**
 
-An implementation of the original **Encoder-Decoder Transformer** neural network from the seminal research paper [*"Attention Is All You Need"*](https://arxiv.org/abs/1706.03762) (Vaswani et al., 2017), written in pure **PyTorch**.
-
-This repository builds every single Transformer component from first principles without relying on high-level pre-built modules like `nn.Transformer`. It includes complete training, validation, autoregressive greedy decoding, interactive translation, and multi-head attention visualization.
-
----
-
-## Table of Contents
-- [Architecture Overview](#-architecture-overview)
-  - [Mathematical Formulations](#mathematical-formulations)
-- [Project Structure](#-project-structure)
-- [Dataset & Tokenization](#-dataset--tokenization)
-- [Installation & Setup](#-installation--setup)
-- [Training](#-training)
-  - [1. Local Training (CPU)](#1-local-training-cpu)
-  - [2. Cloud Training (Google Colab GPU)](#2-cloud-training-google-colab-gpu)
-- [Inference & Translation](#-inference--translation)
-- [Attention Visualization](#-attention-visualization)
-- [Hyperparameters](#-hyperparameters)
-- [References](#-references)
-
-## Architecture & Workflow Overview
-
-The model implements the complete **Sequence-to-Sequence Encoder-Decoder Transformer** pipeline:
-
-1. **Input Embedding & Positional Encoding:** Source English and target Italian tokens are projected into continuous dense vectors ($d_{model}$) and summed with sinusoidal positional encodings to preserve word order.
-2. **Encoder Stack ($N$ Layers):** Processes the source sentence bidirectionally through stacked Multi-Head Self-Attention and Position-wise Feed-Forward layers, applying Layer Normalization and Residual Additive connections at each sub-layer.
-3. **Decoder Stack ($N$ Layers):** Autoregressively generates target tokens using:
-   - **Masked Self-Attention:** Applies a causal lower-triangular mask to prevent future token lookahead.
-   - **Cross-Attention:** Queries the final encoder output representations to dynamically align source English words with target Italian tokens.
-   - **Feed-Forward Sub-layer:** Applies non-linear point-wise feature projections.
-4. **Linear Projection & Output:** Maps decoder hidden states to target vocabulary logits to compute Cross-Entropy loss during training or select next-token predictions via greedy decoding during inference.
+A professional, microservices-based machine learning inference platform that implements a from-scratch Transformer model (based on *Attention Is All You Need*) for translating English text to Italian. The system features a highly scalable, asynchronous architecture with decoupled API and compute layers.
 
 ---
 
-### Mathematical Formulations
+## 📑 Table of Contents
+- [✨ Capabilities](#-capabilities)
+- [🏗️ Architecture & Pipeline](#️-architecture--pipeline)
+- [🧠 Mathematical Formulations](#-mathematical-formulations)
+- [📚 Dataset & Tokenization](#-dataset--tokenization)
+- [🐳 Docker Deployment (Recommended)](#-docker-deployment-recommended)
+- [🚀 Local Setup (Manual)](#-local-setup-manual)
+- [🔑 API Reference](#-api-reference)
 
+---
+
+## ✨ Capabilities
+This platform is a comprehensive, end-to-end Machine Learning web application capable of:
+- **Neural Machine Translation**: High-quality English to Italian translation powered by a custom-built Transformer model.
+- **Custom Model Training**: A fully featured training pipeline capable of downloading the Opus Books dataset, building vocabulary tokenizers, and training the transformer architecture from scratch on CPU or GPU (compatible with Kaggle and Google Colab).
+- **Asynchronous Task Processing**: Decoupled architecture using RabbitMQ to ensure that heavy ML inference tasks do not block the web API.
+- **Scalable Compute Layer**: A dedicated Python Inference Worker that pulls jobs from the message queue, performs the translation via PyTorch, and updates the database.
+- **Secure REST API**: A FastAPI-based API Gateway featuring JWT (JSON Web Token) authentication, user registration, and secure endpoints.
+- **Persistent Storage**: MongoDB integration to securely store user credentials, track translation job states (pending, processing, completed), and maintain translation history.
+
+---
+
+## 🏗️ Architecture & Pipeline
+The system is designed with modern microservice patterns to ensure responsiveness and scalability:
+1. **Client Request**: A user authenticates via the `/api/v1/auth/login` endpoint to receive a secure JWT token.
+2. **Job Submission**: The client submits English text to the API Gateway (`POST /api/v1/translate/`). 
+3. **Queueing**: The API Gateway validates the token, registers a `pending` translation job in MongoDB, publishes the job details to a RabbitMQ message exchange, and immediately returns a `202 Accepted` response with a unique Job ID.
+4. **Inference Worker**: The background `python_worker.py` consumes the message from RabbitMQ. It updates the job status to `processing`, loads the pre-trained `.pt` model weights, and executes the Transformer decoding loop.
+5. **Completion**: The worker saves the final Italian translation and the total processing time back to MongoDB, marking the job as `completed`.
+6. **Result Retrieval**: The client polls the API (`GET /api/v1/translate/{job_id}`) to retrieve the finished translation, or accesses their full translation history via the React frontend.
+
+---
+
+## 🧠 Mathematical Formulations
+The ML model implements the complete **Sequence-to-Sequence Encoder-Decoder Transformer** pipeline:
 1. **Scaled Dot-Product Attention:**
    $$\text{Attention}(Q, K, V) = \text{softmax}\left(\frac{Q K^T}{\sqrt{d_k}}\right) V$$
-
 2. **Multi-Head Attention:**
    $$\text{MultiHead}(Q, K, V) = \text{Concat}(\text{head}_1, \dots, \text{head}_h) W^O$$
-   $$\text{where } \text{head}_i = \text{Attention}(Q W_i^Q, K W_i^K, V W_i^V)$$
-
 3. **Sinusoidal Positional Encoding:**
    $$PE_{(pos, 2i)} = \sin\left(\frac{pos}{10000^{2i/d_{model}}}\right)$$
-   $$PE_{(pos, 2i+1)} = \cos\left(\frac{pos}{10000^{2i/d_{model}}}\right)$$
-
-4. **Position-wise Feed-Forward Network:**
-   $$\text{FFN}(x) = \max(0, x W_1 + b_1) W_2 + b_2$$
-
-5. **Layer Normalization:**
-   $$\text{LayerNorm}(x) = \alpha \odot \left(\frac{x - \mu}{\sqrt{\sigma^2 + \epsilon}}\right) + \beta$$
-
-6. **Residual Additive Connections:**
-   $$\text{Output} = x + \text{Dropout}(\text{SubLayer}(\text{LayerNorm}(x)))$$
-
-7. **Causal Masking (Decoder):**
+4. **Causal Masking (Decoder):**
    Upper-triangular masking ensures token at index $t$ can only attend to previous positions $\le t$.
 
 ---
 
-## Project Structure
-
-```text
-eng-to-it/
-├── model.py                # Core Transformer architecture built from scratch
-├── dataset.py              # Bilingual dataset loader, padding & causal masking
-├── config.py               # Hyperparameters and checkpoint directory paths
-├── train.py                # Training loop, validation, TensorBoard logging & greedy decode
-├── translate.py            # CLI & programmatic inference for translating sentences
-├── eng2it.ipynb            # Google Colab GPU training notebook
-├── attention_visual.ipynb  # Interactive Altair attention heatmaps visualization
-├── .gitignore              # Ignores heavy weights, venvs, and cache files
-└── README.md               # Project documentation
-```
-
----
-
-## Dataset & Tokenization
-
+## 📚 Dataset & Tokenization
 * **Dataset:** [`Helsinki-NLP/opus_books`](https://huggingface.co/datasets/Helsinki-NLP/opus_books) (English $\rightarrow$ Italian translation pairs from classical literature).
-* **Tokenizer:** Custom `WordLevel` tokenizers trained dynamically using Hugging Face `tokenizers` library with special tokens:
-  * `[UNK]` — Unknown Token (Index 0)
-  * `[PAD]` — Padding Token (Index 1)
-  * `[SOS]` — Start of Sentence (Index 2)
-  * `[EOS]` — End of Sentence (Index 3)
+* **Tokenizer:** Custom `WordLevel` tokenizers trained dynamically using Hugging Face `tokenizers` library with special tokens (`[UNK]`, `[PAD]`, `[SOS]`, `[EOS]`).
 
 ---
 
-## 🛠 Installation & Setup
+## 🐳 Docker Deployment (Recommended)
+This application is fully containerized. You can spin up the entire microservices architecture (MongoDB, RabbitMQ, API Gateway, PyTorch Worker, and React Frontend) with a single command on any machine.
 
-1. **Clone the repository:**
-   ```bash
-   git clone https://github.com/ayushman-77/eng-to-it.git
-   cd eng-to-it
-   ```
-
-2. **Create a virtual environment:**
-   ```bash
-   python -m venv venv
-   # Windows
-   .\venv\Scripts\activate
-   # Linux / macOS
-   source venv/bin/activate
-   ```
-
-3. **Install dependencies:**
-   ```bash
-   pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
-   pip install datasets tokenizers tensorboard tqdm altair pandas numpy
-   ```
-
----
-
-## Training
-
-### 1. Local Training (CPU)
-Run the training script locally:
+1. Make sure you have Docker and Docker Compose installed.
+2. Ensure your trained PyTorch weights are placed in the `weights/` directory (e.g., `weights/tmodel_19.pt`).
+3. Run the following command from the project root:
 ```bash
-python train.py
+docker-compose up --build
 ```
-* Tokenizers will automatically be built and saved on the first run (`tokenizer_en.json`, `tokenizer_it.json`).
-* Checkpoints are saved at the end of each epoch into the `weights/` folder (e.g., `weights/tmodel_00.pt`).
-
-### 2. Cloud Training (Google Colab GPU)
-For fast GPU training (~1–2 minutes per epoch):
-1. Open the included [`eng2it.ipynb`](eng2it.ipynb) in [Google Colab](https://colab.research.google.com).
-2. Set Runtime to **T4 GPU** (`Runtime > Change runtime type > T4 GPU`).
-3. Connect your Google Drive to save checkpoints permanently and run all cells.
+This will automatically build and launch all 5 containers securely linked via an internal Docker network. 
+- The Frontend will be served at `http://localhost:5173`
+- The API Swagger UI will be at `http://localhost:8000/docs`
 
 ---
 
-## Inference & Translation
+## 🚀 Local Setup (Manual)
 
-Translate any sentence from the command line:
+### 1. Start Infrastructure
+Ensure MongoDB (`mongod`) and RabbitMQ (`rabbitmq-server`) are running in the background. Place your weights in the `weights/` directory.
 
+### 2. Terminal 1: API Gateway
 ```bash
-python translate.py "I am reading a book in my room."
+cd services/api_gateway
+source .venv/Scripts/activate
+pip install -r requirements.txt
+python -m app.main
 ```
 
-Output:
-```text
-Input sentence: I am reading a book in my room.
-Loaded weights from weights/tmodel_19.pt
-Translation (it): Sono leggendo un libro nella mia stanza .
+### 3. Terminal 2: Inference Worker
+Open a new terminal in the global Python environment (with PyTorch installed):
+```bash
+pip install aio_pika motor
+python python_worker.py
 ```
 
-Or use the Python API in your own code:
-```python
-from translate import translate
-
-result = translate("He walked towards the house.")
-print(result) # "Camminava verso la casa ."
+### 4. Terminal 3: React Frontend
+```bash
+cd services/frontend
+npm install
+npm run dev
 ```
 
 ---
 
-## Attention Visualization
+## 🔑 API Reference
+All translation endpoints require a `Bearer` token obtained from `/api/v1/auth/login`.
 
-Open [`attention_visual.ipynb`](attention_visual.ipynb) to inspect the learned attention weights:
-* **Encoder Self-Attention:** Shows which source words attend to other source words.
-* **Decoder Masked Self-Attention:** Visualizes autoregressive target word dependencies.
-* **Encoder-Decoder Cross-Attention:** Shows word alignments between English and Italian across all 8 attention heads.
-
----
-
-## Hyperparameters
-
-Default configuration defined in [`config.py`](config.py):
-
-| Hyperparameter | Default (Fast/CPU) | Full Paper (GPU) | Description |
-| :--- | :--- | :--- | :--- |
-| **`d_model`** | `256` | `512` | Embedding & hidden representation dimension |
-| **`N`** | `3` | `6` | Number of Encoder and Decoder layers |
-| **`h`** | `8` | `8` | Number of Multi-Head Attention heads |
-| **`d_ff`** | `512` | `2048` | Dimension of Feed-Forward hidden layer |
-| **`seq_len`** | `80` | `350` | Maximum sentence token length |
-| **`batch_size`** | `32` | `32` / `64` | Batch size during training |
-| **`lr`** | `3e-4` | `1e-4` | Adam optimizer learning rate |
-| **`dropout`** | `0.1` | `0.1` | Dropout rate for regularization |
-| **`label_smoothing`** | `0.1` | `0.1` | Label smoothing for CrossEntropyLoss |
+| Method | Endpoint                        | Auth     | Description                          |
+| :----- | :------------------------------ | :------- | :----------------------------------- |
+| POST   | `/api/v1/auth/register`         | —        | Create a new user account            |
+| POST   | `/api/v1/auth/login`            | —        | Authenticate, receive JWT            |
+| POST   | `/api/v1/translate/`            | Bearer   | Submit English text for translation  |
+| GET    | `/api/v1/translate/{job_id}`    | Bearer   | Poll job status / retrieve result    |
 
 ---
 
-## References
-* Vaswani, A., et al. (2017). [*Attention Is All You Need*](https://arxiv.org/abs/1706.03762). Advances in Neural Information Processing Systems (NeurIPS).
-* Hugging Face [`datasets`](https://huggingface.co/docs/datasets) & [`tokenizers`](https://huggingface.co/docs/tokenizers).
-* OPUS Books Dataset: [Tiedemann, J. (2012). *Parallel Data, Tools and Interfaces in OPUS*](https://opus.nlpl.eu/).
-
----
-
-## License
-MIT License. Feel free to use, modify, and distribute for educational and research purposes.
+## 📖 References
+* Vaswani, A., et al. (2017). [*Attention Is All You Need*](https://arxiv.org/abs/1706.03762). NeurIPS.
+* Hugging Face `datasets` & `tokenizers`.
+* [FastAPI Documentation](https://fastapi.tiangolo.com/)
+* [RabbitMQ Documentation](https://www.rabbitmq.com/)

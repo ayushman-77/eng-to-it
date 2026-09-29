@@ -1,0 +1,48 @@
+version: '3.8'
+
+services:
+  mongodb:
+    image: mongo:6
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+
+  api_gateway:
+    build: 
+      context: ./services/api_gateway
+    ports:
+      - "8000:8000"
+    environment:
+      - MONGO_URI=mongodb://mongodb:27017
+      - RABBITMQ_URI=amqp://guest:guest@rabbitmq:5672/
+    depends_on:
+      - mongodb
+      - rabbitmq
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
+    environment:
+      - MONGO_URI=mongodb://mongodb:27017
+      - RABBITMQ_URI=amqp://guest:guest@rabbitmq:5672/
+    depends_on:
+      - mongodb
+      - rabbitmq
+      - api_gateway
+
+  frontend:
+    build:
+      context: ./services/frontend
+    ports:
+      - "5173:80"
+
+volumes:
+  mongo_data:
