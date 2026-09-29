@@ -7,42 +7,72 @@ services:
       - "27017:27017"
     volumes:
       - mongo_data:/data/db
+    networks:
+      - eng_to_it_net
 
   rabbitmq:
     image: rabbitmq:3-management
     ports:
       - "5672:5672"
       - "15672:15672"
+    healthcheck:
+      test: rabbitmq-diagnostics -q ping
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    networks:
+      - eng_to_it_net
 
   api_gateway:
     build: 
       context: ./services/api_gateway
     ports:
       - "8000:8000"
+    restart: on-failure
     environment:
       - MONGO_URI=mongodb://mongodb:27017
       - RABBITMQ_URI=amqp://guest:guest@rabbitmq:5672/
+      - SECRET_KEY=your_super_secret_key_change_me
     depends_on:
-      - mongodb
-      - rabbitmq
+      rabbitmq:
+        condition: service_healthy
+      mongodb:
+        condition: service_started
+    networks:
+      - eng_to_it_net
 
-  worker:
+  inference_worker:
     build:
       context: .
       dockerfile: Dockerfile.worker
+    restart: on-failure
     environment:
       - MONGO_URI=mongodb://mongodb:27017
       - RABBITMQ_URI=amqp://guest:guest@rabbitmq:5672/
     depends_on:
-      - mongodb
-      - rabbitmq
-      - api_gateway
+      rabbitmq:
+        condition: service_healthy
+      mongodb:
+        condition: service_started
+    networks:
+      - eng_to_it_net
+    volumes:
+      - ./weights:/app/weights
 
   frontend:
     build:
       context: ./services/frontend
     ports:
       - "5173:80"
+    environment:
+      - VITE_API_URL=http://localhost:8000/api/v1
+    depends_on:
+      - api_gateway
+    networks:
+      - eng_to_it_net
+
+networks:
+  eng_to_it_net:
 
 volumes:
   mongo_data:

@@ -2,6 +2,7 @@ import asyncio
 import json
 import logging
 import os
+import os
 from datetime import datetime, timezone
 
 import aio_pika

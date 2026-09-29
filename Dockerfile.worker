@@ -1,11 +1,13 @@
 FROM python:3.11-slim
+
 WORKDIR /app
 
-# Install dependencies including PyTorch (CPU version to keep image size manageable)
-COPY requirements-worker.txt .
-RUN pip install --no-cache-dir -r requirements-worker.txt --extra-index-url https://download.pytorch.org/whl/cpu
+# Install dependencies
+RUN pip install --no-cache-dir torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
+RUN pip install --no-cache-dir aio_pika motor datasets tokenizers tensorboard
 
-# Copy the core ML files, config, and weights
-COPY . .
+# Copy the worker and model code
+COPY python_worker.py translate.py config.py model.py train.py dataset.py ./
+COPY tokenizer_en.json tokenizer_it.json ./
 
 CMD ["python", "python_worker.py"]
