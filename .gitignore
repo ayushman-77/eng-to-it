@@ -20,7 +20,8 @@ weights/
 *.ckpt
 
 # Generated Tokenizer Cache Files
-tokenizer_*.json
+# (Commented out so they push to GitHub, allowing Docker builds to succeed for others)
+# tokenizer_*.json
 
 # TensorBoard & Experiment Logs
 runs/
