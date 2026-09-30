@@ -41,10 +41,10 @@ services:
     networks:
       - eng_to_it_net
 
-  inference_worker_hpc:
+  inference_worker:
     build:
-      context: ./services/inference_worker_cpp
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: services/inference_worker/Dockerfile
     restart: on-failure
     environment:
       - MONGO_URI=mongodb://mongodb:27017

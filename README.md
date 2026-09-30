@@ -21,7 +21,7 @@ This platform is a comprehensive, end-to-end Machine Learning web application ca
 - **Neural Machine Translation**: High-quality English to Italian translation powered by a custom-built Transformer model.
 - **Custom Model Training**: A fully featured training pipeline capable of downloading the Opus Books dataset, building vocabulary tokenizers, and training the transformer architecture from scratch on CPU or GPU (compatible with Kaggle and Google Colab).
 - **Asynchronous Task Processing**: Decoupled architecture using RabbitMQ to ensure that heavy ML inference tasks do not block the web API.
-- **Scalable Compute Layer**: A dedicated High-Performance C++ Inference Worker that pulls jobs from the message queue, performs hardware-accelerated translation via LibTorch/ONNX, and updates the database.
+- **Scalable Compute Layer**: A dedicated Python Inference Worker that pulls jobs from the message queue, performs the translation via PyTorch, and updates the database.
 - **Secure REST API**: A FastAPI-based API Gateway featuring JWT (JSON Web Token) authentication, user registration, and secure endpoints.
 - **Persistent Storage**: MongoDB integration to securely store user credentials, track translation job states (pending, processing, completed), and maintain translation history.
 
@@ -32,8 +32,8 @@ The system is designed with modern microservice patterns to ensure responsivenes
 1. **Client Request**: A user authenticates via the `/api/v1/auth/login` endpoint to receive a secure JWT token.
 2. **Job Submission**: The client submits English text to the API Gateway (`POST /api/v1/translate/`). 
 3. **Queueing**: The API Gateway validates the token, registers a `pending` translation job in MongoDB, publishes the job details to a RabbitMQ message exchange, and immediately returns a `202 Accepted` response with a unique Job ID.
-4. **Inference Worker**: The background High-Performance C++ worker consumes the message from RabbitMQ. It updates the job status to `processing`, loads the pre-trained model into LibTorch execution graphs, and executes the highly-optimized Transformer decoding loop.
-5. **Completion**: The C++ worker saves the final Italian translation back to MongoDB via mongocxx, marking the job as `completed`, and acknowledges the message in RabbitMQ.
+4. **Inference Worker**: The background `services/inference_worker/main.py` consumes the message from RabbitMQ. It updates the job status to `processing`, loads the pre-trained `.pt` model weights, and executes the Transformer decoding loop.
+5. **Completion**: The worker saves the final Italian translation and the total processing time back to MongoDB, marking the job as `completed`.
 6. **Result Retrieval**: The client polls the API (`GET /api/v1/translate/{job_id}`) to retrieve the finished translation, or accesses their full translation history via the React frontend.
 
 ---
@@ -89,7 +89,7 @@ python -m app.main
 Open a new terminal in the global Python environment (with PyTorch installed):
 ```bash
 pip install aio_pika motor
-python python_worker.py
+python services/inference_worker/main.py
 ```
 
 ### 4. Terminal 3: React Frontend

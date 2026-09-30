@@ -7,7 +7,8 @@ RUN pip install --no-cache-dir torch torchvision torchaudio --index-url https://
 RUN pip install --no-cache-dir aio_pika motor datasets tokenizers tensorboard
 
 # Copy the worker and model code
-COPY python_worker.py translate.py config.py model.py train.py dataset.py ./
+COPY services/inference_worker/main.py ./
+COPY translate.py config.py model.py train.py dataset.py ./
 COPY tokenizer_en.json tokenizer_it.json ./
 
-CMD ["python", "python_worker.py"]
+CMD ["python", "main.py"]
